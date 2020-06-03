@@ -9,7 +9,7 @@ import threading
 import PIL
 from PIL import Image
 
-FORMAT = "[%(threadName)s, %(asctime)s, %(levelname)s] %(messages)s"
+FORMAT = "[%(threadName)s, %(asctime)s, %(levelname)s] %(message)s"
 logging.basicConfig(filename='logfile.log', level=logging.DEBUG, format=FORMAT)
 
 class ThumbnailMakerService(object):
