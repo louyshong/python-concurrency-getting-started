@@ -24,8 +24,7 @@ class ThumbnailMakerService(object):
 
     def download_image(self, url): 
         # download each image and save to the input dir 
-        self.dl_sem.acquire()
-        try: 
+        with self.dl_sem:
             logging.info("downloading image at URL " + url)
             img_filename = urlparse(url).path.split('/')[-1]
             dest_path = self.input_dir + os.path.sep + img_filename
@@ -34,9 +33,6 @@ class ThumbnailMakerService(object):
             with self.dl_lock: 
                 self.downloaded_bytes += img_size
             logging.info("image [{} bytes] saved to {}".format(img_size, dest_path))
-        
-        finally:
-            self.dl_sem.release()
 
     def download_images(self, img_url_list):
         # validate inputs
