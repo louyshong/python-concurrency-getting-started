@@ -19,6 +19,21 @@ class ThumbnailMakerService(object):
         self.input_dir = self.home_dir + os.path.sep + 'incoming'
         self.output_dir = self.home_dir + os.path.sep + 'outgoing'
         self.img_queue = Queue()
+        self.dl_queue = Queue()
+
+    def download_image(self):
+        while not self.dl_queue.empty():
+            try: 
+                url = self.dl_queue.get(block=False)
+                # download each image and save to the input dir 
+                img_filename = urlparse(url).path.split('/')[-1]
+                urlretrieve(url, self.input_dir + os.path.sep + img_filename)
+                self.img_queue.put(img_filename)
+
+                self.dl_queue.task_done()
+                
+            except Queue.Empty:
+                logging.info("Queue Empty")
 
     def download_images(self, img_url_list):
         # validate inputs
@@ -83,11 +98,20 @@ class ThumbnailMakerService(object):
         logging.info("START make_thumbnails")
         start = time.perf_counter()
 
-        t1 = Thread(target=self.download_images, args=([img_url_list]))
+        for img_url in img_url_list:
+            self.dl_queue.put(img_url)
+
+        num_dl_threads = 4
+        for _ in range(num_dl_threads):
+            t = Thread(target=self.download_image)
+            t.start()
+
         t2 = Thread(target=self.perform_resizing)
-        t1.start()
         t2.start()
-        t1.join()
+
+        self.dl_queue.join()
+        self.img_queue.put(None)
+        
         t2.join()
 
         end = time.perf_counter()
